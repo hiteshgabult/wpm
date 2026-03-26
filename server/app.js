@@ -9,7 +9,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 PRO UI
 app.get('/', (req, res) => {
   res.send(`
   <html>
@@ -19,13 +18,13 @@ app.get('/', (req, res) => {
   .container { max-width:900px;margin:auto;background:white;padding:20px;border-radius:10px; }
   input,button,textarea { padding:10px;margin:5px 0;width:100%; }
   button { background:#007bff;color:white;border:none;cursor:pointer; }
-  textarea { height:300px; }
+  textarea { height:200px; }
   </style>
   </head>
 
   <body>
   <div class="container">
-    <h1>🚀 Doc → WP PRO</h1>
+    <h1>🚀 Doc → WP FINAL</h1>
 
     <h3>Google Doc URL</h3>
     <input id="url"/>
@@ -34,6 +33,10 @@ app.get('/', (req, res) => {
     <h3>Upload DOCX</h3>
     <input type="file" id="file"/>
     <button onclick="convertFile()">Convert File</button>
+
+    <h3>Paste Content</h3>
+    <textarea id="paste"></textarea>
+    <button onclick="convertPaste()">Convert Paste</button>
 
     <button onclick="download()">⬇ Download Output</button>
 
@@ -44,64 +47,76 @@ app.get('/', (req, res) => {
     <ul id="history"></ul>
   </div>
 
-  <script>
-    async function convertUrl(){
-      const url = document.getElementById('url').value;
+<script>
+async function convertUrl(){
+  const url = document.getElementById('url').value;
 
-      const res = await fetch('/api/convert-url',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({url})
-      });
+  const res = await fetch('/api/convert-url',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({url})
+  });
 
-      const data = await res.json();
-      document.getElementById('out').value = data.data || data.error;
+  const data = await res.json();
+  document.getElementById('out').value = data.data || data.error;
+  loadHistory();
+}
 
-      loadHistory();
-    }
+async function convertFile(){
+  const file = document.getElementById('file').files[0];
 
-    async function convertFile(){
-      const file = document.getElementById('file').files[0];
+  if(!file){
+    alert("Select file first");
+    return;
+  }
 
-      if(!file){
-        alert("Select file first");
-        return;
-      }
+  const fd = new FormData();
+  fd.append('file', file);
 
-      const fd = new FormData();
-      fd.append('file', file);
+  const res = await fetch('/api/upload',{
+    method:'POST',
+    body: fd
+  });
 
-      const res = await fetch('/api/upload',{
-        method:'POST',
-        body: fd
-      });
+  const data = await res.json();
+  document.getElementById('out').value = data.data || data.error;
+  loadHistory();
+}
 
-      const data = await res.json();
-      document.getElementById('out').value = data.data || data.error;
+async function convertPaste(){
+  const content = document.getElementById('paste').value;
 
-      loadHistory();
-    }
+  const res = await fetch('/api/paste',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({content})
+  });
 
-    function download(){
-      window.open('/download');
-    }
+  const data = await res.json();
+  document.getElementById('out').value = data.data || data.error;
+  loadHistory();
+}
 
-    async function loadHistory(){
-      const res = await fetch('/api/history');
-      const data = await res.json();
+function download(){
+  window.open('/download');
+}
 
-      const list = document.getElementById('history');
-      list.innerHTML = '';
+async function loadHistory(){
+  const res = await fetch('/api/history');
+  const data = await res.json();
 
-      data.forEach(item => {
-        const li = document.createElement('li');
-        li.innerText = item.date + " | size: " + item.size;
-        list.appendChild(li);
-      });
-    }
+  const list = document.getElementById('history');
+  list.innerHTML = '';
 
-    loadHistory();
-  </script>
+  data.forEach(item => {
+    const li = document.createElement('li');
+    li.innerText = item.date + " | " + item.type + " | size: " + item.size;
+    list.appendChild(li);
+  });
+}
+
+loadHistory();
+</script>
 
   </body>
   </html>
@@ -110,7 +125,7 @@ app.get('/', (req, res) => {
 
 app.use('/api', convertRoutes);
 
-// ✅ download fix
+// download
 app.get('/download', (req, res) => {
   const filePath = path.join(process.cwd(), 'output.html');
 

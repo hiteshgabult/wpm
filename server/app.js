@@ -9,75 +9,100 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ FINAL UI
+// 🔥 PRO UI
 app.get('/', (req, res) => {
   res.send(`
   <html>
-  <body style="font-family:Arial;padding:40px;">
-    <h1>🚀 Doc → WP FINAL</h1>
+  <head>
+  <style>
+  body { font-family: Arial; background:#f5f5f5; }
+  .container { max-width:900px;margin:auto;background:white;padding:20px;border-radius:10px; }
+  input,button,textarea { padding:10px;margin:5px 0;width:100%; }
+  button { background:#007bff;color:white;border:none;cursor:pointer; }
+  textarea { height:300px; }
+  </style>
+  </head>
+
+  <body>
+  <div class="container">
+    <h1>🚀 Doc → WP PRO</h1>
 
     <h3>Google Doc URL</h3>
-    <input id="url" style="width:400px;padding:10px;" />
+    <input id="url"/>
     <button onclick="convertUrl()">Convert URL</button>
 
     <h3>Upload DOCX</h3>
     <input type="file" id="file"/>
     <button onclick="convertFile()">Convert File</button>
 
-    <p id="filename"></p>
-
-    <br/>
-    <button onclick="download()">Download Output</button>
+    <button onclick="download()">⬇ Download Output</button>
 
     <h3>Output</h3>
-    <textarea id="out" rows="20" cols="100"></textarea>
+    <textarea id="out"></textarea>
 
-    <script>
-      const fileInput = document.getElementById('file');
+    <h3>History</h3>
+    <ul id="history"></ul>
+  </div>
 
-      // ✅ show file name
-      fileInput.addEventListener('change', () => {
-        document.getElementById('filename').innerText =
-          fileInput.files[0]?.name || '';
+  <script>
+    async function convertUrl(){
+      const url = document.getElementById('url').value;
+
+      const res = await fetch('/api/convert-url',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({url})
       });
 
-      async function convertUrl(){
-        const url = document.getElementById('url').value;
+      const data = await res.json();
+      document.getElementById('out').value = data.data || data.error;
 
-        const res = await fetch('/api/convert-url',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({url})
-        });
+      loadHistory();
+    }
 
-        const data = await res.json();
-        document.getElementById('out').value = data.data || data.error;
+    async function convertFile(){
+      const file = document.getElementById('file').files[0];
+
+      if(!file){
+        alert("Select file first");
+        return;
       }
 
-      async function convertFile(){
-        const file = fileInput.files[0];
+      const fd = new FormData();
+      fd.append('file', file);
 
-        if(!file){
-          document.getElementById('out').value = "Please select file";
-          return;
-        }
+      const res = await fetch('/api/upload',{
+        method:'POST',
+        body: fd
+      });
 
-        const fd = new FormData();
-        fd.append('file', file);
+      const data = await res.json();
+      document.getElementById('out').value = data.data || data.error;
 
-        const res = await fetch('/api/upload',{
-          method:'POST',
-          body: fd
-        });
+      loadHistory();
+    }
 
-        const data = await res.json();
-        document.getElementById('out').value = data.data || data.error;
-      }
+    function download(){
+      window.open('/download');
+    }
 
-      function download(){
-        window.open('/download');
-      }
-    </script>
+    async function loadHistory(){
+      const res = await fetch('/api/history');
+      const data = await res.json();
+
+      const list = document.getElementById('history');
+      list.innerHTML = '';
+
+      data.forEach(item => {
+        const li = document.createElement('li');
+        li.innerText = item.date + " | size: " + item.size;
+        list.appendChild(li);
+      });
+    }
+
+    loadHistory();
+  </script>
+
   </body>
   </html>
   `);
@@ -85,15 +110,15 @@ app.get('/', (req, res) => {
 
 app.use('/api', convertRoutes);
 
-// download
+// ✅ download fix
 app.get('/download', (req, res) => {
-  const filePath = path.resolve('output.html');
+  const filePath = path.join(process.cwd(), 'output.html');
 
-  if (fs.existsSync(filePath)) {
-    res.download(filePath);
-  } else {
-    res.send("No file generated yet");
+  if (!fs.existsSync(filePath)) {
+    return res.send("No output generated");
   }
+
+  res.download(filePath, 'wp-output.html');
 });
 
 export default app;

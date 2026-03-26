@@ -3,13 +3,22 @@ import * as cheerio from 'cheerio';
 export const cleanHTML = (html) => {
   const $ = cheerio.load(html);
 
-  // remove span + style
-  $('span').each((i, el) => $(el).replaceWith($(el).html()));
+  // remove unwanted tags
+  $('meta, style, script').remove();
+
+  // remove span but keep content
+  $('span').each((i, el) => {
+    $(el).replaceWith($(el).html());
+  });
+
+  // remove attributes
   $('[style]').removeAttr('style');
 
-  // 🔥 TABLE FIX ENGINE
-  $('table').each((i, table) => {
+  // remove empty tags
+  $('p:empty').remove();
 
+  // ✅ TABLE FIX (same as before but clean text)
+  $('table').each((i, table) => {
     let grid = [];
 
     $(table).find('tr').each((rowIndex, tr) => {
@@ -25,7 +34,7 @@ export const cleanHTML = (html) => {
         for (let r = 0; r < rowspan; r++) {
           for (let c = 0; c < colspan; c++) {
             if (!grid[rowIndex + r]) grid[rowIndex + r] = [];
-            grid[rowIndex + r][colIndex + c] = $(cell).text();
+            grid[rowIndex + r][colIndex + c] = $(cell).text().trim();
           }
         }
 
@@ -33,7 +42,6 @@ export const cleanHTML = (html) => {
       });
     });
 
-    // rebuild table
     let newTable = '<table border="1">';
     grid.forEach(row => {
       newTable += '<tr>';
@@ -47,5 +55,6 @@ export const cleanHTML = (html) => {
     $(table).replaceWith(newTable);
   });
 
-  return $.html();
+  // ✅ ONLY BODY CONTENT (IMPORTANT)
+  return $('body').html();
 };

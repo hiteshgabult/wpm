@@ -1,9 +1,10 @@
 export const formatToWP = (html) => {
   return html
-    .replace(/<p>/g, '<!-- wp:paragraph --><p>')
-    .replace(/<\/p>/g, '</p><!-- /wp:paragraph -->')
-    .replace(/<h1>/g, '<!-- wp:heading --><h1>')
-    .replace(/<\/h1>/g, '</h1><!-- /wp:heading -->')
-    .replace(/<table>/g, '<!-- wp:table --><table>')
-    .replace(/<\/table>/g, '</table><!-- /wp:table -->');
+    .replace(/\n+/g, '\n')
+    .replace(/<p>/g, '\n<!-- wp:paragraph -->\n<p>')
+    .replace(/<\/p>/g, '</p>\n<!-- /wp:paragraph -->\n')
+    .replace(/<h1>/g, '\n<!-- wp:heading -->\n<h1>')
+    .replace(/<\/h1>/g, '</h1>\n<!-- /wp:heading -->\n')
+    .replace(/<table>/g, '\n<!-- wp:table -->\n<table>')
+    .replace(/<\/table>/g, '</table>\n<!-- /wp:table -->\n');
 };

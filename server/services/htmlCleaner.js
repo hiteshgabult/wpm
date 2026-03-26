@@ -5,7 +5,7 @@ import * as cheerio from 'cheerio';
 export const cleanHTML = (html) => {
   const $ = cheerio.load(html);
 
-  // Remove all span tags but keep content
+  // Remove spans
   $('span').each((i, el) => {
     $(el).replaceWith($(el).html());
   });
@@ -20,10 +20,8 @@ export const cleanHTML = (html) => {
     }
   });
 
-  // Table cleanup (basic)
-  $('table').each((i, table) => {
-    $(table).attr('border', '1');
-  });
+  // Table basic cleanup
+  $('table').attr('border', '1');
 
   return $.html();
 };

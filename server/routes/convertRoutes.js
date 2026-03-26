@@ -1,7 +1,11 @@
 import express from 'express';
-import { convertDoc } from '../controllers/convertController.js';
+import multer from 'multer';
+import { convertUrl, uploadDoc } from '../controllers/convertController.js';
 
 const router = express.Router();
-router.post('/', convertDoc);
+const upload = multer({ dest: 'uploads/' });
+
+router.post('/convert-url', convertUrl);
+router.post('/upload', upload.single('file'), uploadDoc);
 
 export default router;

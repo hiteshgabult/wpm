@@ -1,47 +1,58 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
-import path from 'path';
+import multer from 'multer';
 import convertRoutes from './routes/convertRoutes.js';
 
 const app = express();
+const upload = multer({ dest: 'uploads/' });
 
 app.use(cors());
 app.use(express.json());
 
-// ✅ FRONTEND UI
+// 🔥 UI
 app.get('/', (req, res) => {
   res.send(`
     <html>
-    <head>
-      <title>Doc to WP PRO</title>
-    </head>
-    <body style="font-family: Arial; padding:40px;">
-      <h1>🚀 Doc → WordPress Converter (PRO)</h1>
+    <body style="font-family:Arial;padding:40px;">
+      <h1>🚀 Doc → WP AI Converter</h1>
 
-      <input id="url" type="text" placeholder="Paste Google Doc URL" style="width:400px;padding:10px;" />
-      <button onclick="convert()">Convert</button>
-      <button onclick="download()">Download</button>
+      <h3>Google Doc URL</h3>
+      <input id="url" style="width:400px;padding:10px;" />
+      <button onclick="convertUrl()">Convert URL</button>
 
-      <h3>Output:</h3>
-      <textarea id="output" rows="20" cols="100"></textarea>
+      <h3>Upload DOCX</h3>
+      <input type="file" id="file"/>
+      <button onclick="uploadFile()">Upload</button>
+
+      <h3>Output</h3>
+      <textarea id="out" rows="20" cols="100"></textarea>
 
       <script>
-        async function convert(){
+        async function convertUrl(){
           const url = document.getElementById('url').value;
 
-          const res = await fetch('/api/convert',{
+          const res = await fetch('/api/convert-url',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({url})
           });
 
           const data = await res.json();
-          document.getElementById('output').value = data.data;
+          document.getElementById('out').value = data.data || data.error;
         }
 
-        function download(){
-          window.open('/download');
+        async function uploadFile(){
+          const file = document.getElementById('file').files[0];
+          const fd = new FormData();
+          fd.append('file', file);
+
+          const res = await fetch('/api/upload',{
+            method:'POST',
+            body: fd
+          });
+
+          const data = await res.json();
+          document.getElementById('out').value = data.data || data.error;
         }
       </script>
     </body>
@@ -49,17 +60,6 @@ app.get('/', (req, res) => {
   `);
 });
 
-// API
-app.use('/api/convert', convertRoutes);
-
-// ✅ Download endpoint
-app.get('/download', (req, res) => {
-  const filePath = path.resolve('output.html');
-  if (fs.existsSync(filePath)) {
-    res.download(filePath);
-  } else {
-    res.send("No file generated yet");
-  }
-});
+app.use('/api', convertRoutes);
 
 export default app;

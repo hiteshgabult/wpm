@@ -8,7 +8,9 @@ export const convertUrl = async (req, res) => {
   try {
     const { url } = req.body;
 
-    if (!url) throw new Error("URL required");
+    if (!url) {
+      return res.status(400).json({ error: "URL required" });
+    }
 
     const raw = await fetchGoogleDoc(url);
     const clean = cleanHTML(raw);
@@ -25,10 +27,16 @@ export const convertUrl = async (req, res) => {
 
 export const uploadDoc = async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: "File required" });
+    }
+
     const result = await mammoth.convertToHtml({ path: req.file.path });
 
     const clean = cleanHTML(result.value);
     const wp = formatToWP(clean);
+
+    fs.writeFileSync('output.html', wp);
 
     res.json({ data: wp });
 

@@ -1,78 +1,91 @@
 import express from 'express';
 import cors from 'cors';
-import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import convertRoutes from './routes/convertRoutes.js';
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
 
 app.use(cors());
 app.use(express.json());
 
-// 🔥 FINAL UI
+// ✅ FINAL UI
 app.get('/', (req, res) => {
   res.send(`
-    <html>
-    <body style="font-family:Arial;padding:40px;">
-      <h1>🚀 Doc → WP FINAL</h1>
+  <html>
+  <body style="font-family:Arial;padding:40px;">
+    <h1>🚀 Doc → WP FINAL</h1>
 
-      <h3>Google Doc URL</h3>
-      <input id="url" style="width:400px;padding:10px;" />
-      <button onclick="convertUrl()">Convert URL</button>
+    <h3>Google Doc URL</h3>
+    <input id="url" style="width:400px;padding:10px;" />
+    <button onclick="convertUrl()">Convert URL</button>
 
-      <h3>Upload DOCX</h3>
-      <input type="file" id="file"/>
-      <button onclick="uploadFile()">Upload</button>
+    <h3>Upload DOCX</h3>
+    <input type="file" id="file"/>
+    <button onclick="convertFile()">Convert File</button>
 
-      <br/><br/>
-      <button onclick="download()">Download Output</button>
+    <p id="filename"></p>
 
-      <h3>Output</h3>
-      <textarea id="out" rows="20" cols="100"></textarea>
+    <br/>
+    <button onclick="download()">Download Output</button>
 
-      <script>
-        async function convertUrl(){
-          const url = document.getElementById('url').value;
+    <h3>Output</h3>
+    <textarea id="out" rows="20" cols="100"></textarea>
 
-          const res = await fetch('/api/convert-url',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({url})
-          });
+    <script>
+      const fileInput = document.getElementById('file');
 
-          const data = await res.json();
-          document.getElementById('out').value = data.data || data.error;
+      // ✅ show file name
+      fileInput.addEventListener('change', () => {
+        document.getElementById('filename').innerText =
+          fileInput.files[0]?.name || '';
+      });
+
+      async function convertUrl(){
+        const url = document.getElementById('url').value;
+
+        const res = await fetch('/api/convert-url',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({url})
+        });
+
+        const data = await res.json();
+        document.getElementById('out').value = data.data || data.error;
+      }
+
+      async function convertFile(){
+        const file = fileInput.files[0];
+
+        if(!file){
+          document.getElementById('out').value = "Please select file";
+          return;
         }
 
-        async function uploadFile(){
-          const file = document.getElementById('file').files[0];
+        const fd = new FormData();
+        fd.append('file', file);
 
-          const fd = new FormData();
-          fd.append('file', file);
+        const res = await fetch('/api/upload',{
+          method:'POST',
+          body: fd
+        });
 
-          const res = await fetch('/api/upload',{
-            method:'POST',
-            body: fd
-          });
+        const data = await res.json();
+        document.getElementById('out').value = data.data || data.error;
+      }
 
-          const data = await res.json();
-          document.getElementById('out').value = data.data || data.error;
-        }
-
-        function download(){
-          window.open('/download');
-        }
-      </script>
-    </body>
-    </html>
+      function download(){
+        window.open('/download');
+      }
+    </script>
+  </body>
+  </html>
   `);
 });
 
 app.use('/api', convertRoutes);
 
-// ✅ Download
+// download
 app.get('/download', (req, res) => {
   const filePath = path.resolve('output.html');
 

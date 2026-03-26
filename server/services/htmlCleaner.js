@@ -1,18 +1,29 @@
-import cheerio from 'cheerio';
+// server/services/htmlCleaner.js
 
-export const cleanHTML = (html)=>{
- const $ = cheerio.load(html);
+import * as cheerio from 'cheerio';
 
- // remove spans
- $('span').each((i,el)=>$(el).replaceWith($(el).html()));
+export const cleanHTML = (html) => {
+  const $ = cheerio.load(html);
 
- // remove inline styles
- $('[style]').removeAttr('style');
+  // Remove all span tags but keep content
+  $('span').each((i, el) => {
+    $(el).replaceWith($(el).html());
+  });
 
- // basic table normalization
- $('table').each((i,table)=>{
-   $(table).attr('border','1');
- });
+  // Remove inline styles
+  $('[style]').removeAttr('style');
 
- return $.html();
+  // Remove empty paragraphs
+  $('p').each((i, el) => {
+    if (!$(el).text().trim()) {
+      $(el).remove();
+    }
+  });
+
+  // Table cleanup (basic)
+  $('table').each((i, table) => {
+    $(table).attr('border', '1');
+  });
+
+  return $.html();
 };
